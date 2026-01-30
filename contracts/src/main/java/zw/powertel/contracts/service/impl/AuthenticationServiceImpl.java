@@ -1,0 +1,195 @@
+package zw.powertel.contracts.service.impl;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import zw.powertel.contracts.entities.User;
+import zw.powertel.contracts.exception.AuthenticationException;
+import zw.powertel.contracts.exception.UserNotFoundException;
+import zw.powertel.contracts.payload.request.AuthenticationRequest;
+import zw.powertel.contracts.payload.request.MailBody;
+import zw.powertel.contracts.payload.request.RegisterRequest;
+import zw.powertel.contracts.payload.request.UserUpdateRequest;
+import zw.powertel.contracts.payload.response.AuthenticationResponse;
+import zw.powertel.contracts.repository.UserRepository;
+import zw.powertel.contracts.service.AuthenticationService;
+import zw.powertel.contracts.service.EmailService;
+import zw.powertel.contracts.service.JwtService;
+import zw.powertel.contracts.service.RefreshTokenService;
+import zw.powertel.contracts.service.impl.NotificationService;
+
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.*;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
+public class AuthenticationServiceImpl implements AuthenticationService {
+
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
+
+
+
+    @Override
+    public AuthenticationResponse register(RegisterRequest request) {
+        String generatedPassword = generateRandomPassword(12);
+
+        User user = User.builder()
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(generatedPassword))
+                .phone(request.getPhone())
+                .role(request.getRole())
+                .temporaryPassword(true)
+                .build();
+
+        user = userRepository.save(user);
+
+        // If User implements UserDetails this will work. Otherwise build a UserDetails and pass to jwtService.
+        String jwt = null;
+        try {
+            jwt = jwtService.generateToken(user);
+        } catch (Exception e) {
+            log.warn("Could not generate JWT for newly created user (ok for temporary password flow): {}", e.getMessage());
+        }
+
+        var refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        var roles = user.getRole().getAuthorities().stream()
+                .map(SimpleGrantedAuthority::getAuthority)
+                .toList();
+
+        return AuthenticationResponse.builder()
+                .accessToken(jwt)
+                .email(user.getEmail())
+                .id(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .password(generatedPassword)
+                .phone(user.getPhone())
+                .refreshToken(refreshToken.getToken())
+                .roles(roles)
+                .temporaryPassword(user.isTemporaryPassword())
+                .tokenType("BEARER")
+                .message("User created successfully.")
+                .build();
+    }
+
+    private String generateRandomPassword(int length) {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            password.append(characters.charAt(random.nextInt(characters.length())));
+        }
+        return password.toString();
+    }
+
+    @Override
+    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+        log.info("Authentication attempt for {}", request.getEmail());
+        Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
+        if (optionalUser.isEmpty()) {
+            throw new AuthenticationException("Invalid email or password");
+        }
+        User user = optionalUser.get();
+
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(), request.getPassword()));
+        } catch (BadCredentialsException e) {
+            log.error("Invalid credentials for {}", request.getEmail());
+            throw new AuthenticationException("Invalid email or password");
+        }
+
+        if (user.isTemporaryPassword()) {
+            return AuthenticationResponse.builder()
+                    .accessToken(null)
+                    .roles(Collections.emptyList())
+                    .email(user.getEmail())
+                    .id(user.getId())
+                    .firstname(user.getFirstname())
+                    .lastname(user.getLastname())
+                    .password(user.getPassword())
+                    .temporaryPassword(true)
+                    .refreshToken(null)
+                    .message("Please change your temporary password.")
+                    .build();
+        }
+
+        String jwt = jwtService.generateToken(user);
+        var refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        var roles = user.getRole().getAuthorities().stream()
+                .map(SimpleGrantedAuthority::getAuthority)
+                .toList();
+
+        return AuthenticationResponse.builder()
+                .accessToken(jwt)
+                .roles(roles)
+                .email(user.getEmail())
+                .id(user.getId())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .password(user.getPassword())
+                .temporaryPassword(false)
+                .refreshToken(refreshToken.getToken())
+                .tokenType("BEARER")
+                .message("User Authenticated Successfully")
+                .build();
+    }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    @Transactional
+    public User updateUser(Long userId, UserUpdateRequest userUpdateRequest) {
+        User existingUser = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+        copyNonNullProperties(userUpdateRequest, existingUser);
+        return userRepository.save(existingUser);
+    }
+
+    public void copyNonNullProperties(Object source, Object target) {
+        var src = new org.springframework.beans.BeanWrapperImpl(source);
+        Set<String> ignoreSet = new HashSet<>();
+        for (var pd : src.getPropertyDescriptors()) {
+            Object srcValue = src.getPropertyValue(pd.getName());
+            if (srcValue == null) {
+                ignoreSet.add(pd.getName());
+            }
+        }
+        ignoreSet.add("roles");
+        org.springframework.beans.BeanUtils.copyProperties(source, target, ignoreSet.toArray(new String[0]));
+    }
+
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                throw new IllegalArgumentException("Invalid current password");
+            }
+            user.setPassword(passwordEncoder.encode(newPassword));
+            user.setTemporaryPassword(false);
+            userRepository.save(user);
+        } else {
+            throw new IllegalArgumentException("User not found with the provided email");
+        }
+    }
+}
