@@ -16,6 +16,12 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+  DocsIcon,
+  FolderIcon,
+  DollarLineIcon,
+  BoxIcon,
+  CheckCircleIcon,
+  UserIcon,
 } from "../icons/index";
 
 type NavItem = {
@@ -42,47 +48,47 @@ const ALL_ROLES = [
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <BoxCubeIcon />,
     name: "Dashboard",
     path: "/",
     roles: ALL_ROLES,
   },
   {
-    icon: <ListIcon />,
+    icon: <DocsIcon />,
     name: "Requisition",
     path: "/requisition",
     roles: ["HOD"],
   },
   {
-    icon: <TableIcon />,
+    icon: <FolderIcon />,
     name: "Submitted Requisitions",
     path: "/requisitions/submitted",
     roles: ["ADMIN", "HOD"],
   },
 
   {
-    icon: <TableIcon />,
+    icon: <DollarLineIcon />,
     name: "Finance Director Queue",
     path: "/requisitions/finance",
     roles: ["ADMIN", "FINANCEDIRECTOR"],
   },
 
   {
-    icon: <TableIcon />,
+    icon: <BoxIcon />,
     name: "Procurement Manager Queue",
     path: "/requisitions/procurement",
     roles: ["ADMIN", "PROCUREMENTMANAGER"],
   },
 
   {
-    icon: <TableIcon />,
+    icon: <UserIcon />,
     name: "Company Secretary Queue",
     path: "/requisitions/secretary",
     roles: ["ADMIN", "COMPANYSECRETARY"],
   },
 
   {
-    icon: <TableIcon />,
+    icon: <CheckCircleIcon />,
     name: "Approval Queue",
     path: "/requisitions/approvals",
     roles: ["ADMIN", "COMPANYSECRETARY"],
