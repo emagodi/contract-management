@@ -32,6 +32,8 @@ public class UserUpdateRequest {
     @StrongPassword
     private String password;
 
+    private String phone;
+
     @NotNull
     private Role role;
 

@@ -6,7 +6,7 @@ interface ButtonProps {
   variant?: "primary" | "outline";
   startIcon?: ReactNode;
   endIcon?: ReactNode;
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
   className?: string;
   type?: "button" | "submit" | "reset";
