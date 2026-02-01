@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "@/components/ui/button/Button";
@@ -56,19 +56,106 @@ type Requisition = Record<string, unknown> & {
   procurementDate?: string;
   companySecretary?: string;
   secretaryDate?: string;
+  requisitionStatus?: string;
 };
 
 export default function CompanySecretaryViewForm({ requisition, onSubmit, submitting, error, onCancel }: {
   requisition: Requisition;
-  onSubmit: (decision: "APPROVED" | "REJECTED") => void;
+  onSubmit: (decision: "APPROVED" | "REJECTED", signaturePath?: string) => void;
   submitting?: boolean;
   error?: string | null;
   onCancel: () => void;
 }) {
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED" | "">("");
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [signaturePath, setSignaturePath] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  
   const today = new Date().toISOString().split("T")[0];
   const readOnly = "border border-gray-400 bg-gray-100 text-gray-600 cursor-not-allowed";
   const val = (k: keyof Requisition, fallback: string = "") => String(requisition?.[k] ?? fallback);
+
+  const getAccessToken = () => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+  };
+
+  const getEmail = () => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("email") || sessionStorage.getItem("email");
+  };
+
+  useEffect(() => {
+    const fetchSignature = async () => {
+      const token = getAccessToken();
+      const email = getEmail();
+      if (!email || !token) return;
+
+      try {
+        const res = await fetch(`http://localhost:8080/api/v1/signature/user/email/${email}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const path = await res.text();
+          if (path) {
+            setSignaturePath(path);
+            setSignatureUrl(`http://localhost:8080${path}`);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch signature:", error);
+      }
+    };
+
+    fetchSignature();
+  }, []);
+
+  useEffect(() => {
+    const savedSignature = requisition.companySecretary;
+    if (savedSignature && savedSignature !== "APPROVED" && savedSignature !== "REJECTED" && !signaturePath) {
+      setSignaturePath(savedSignature);
+      setSignatureUrl(`http://localhost:8080${savedSignature}`);
+      // If we have a saved signature, we can infer the decision is likely APPROVED (or whatever logic applies)
+      // But we'll leave decision as is or set it based on status if needed.
+      if (!decision) {
+         setDecision(requisition.requisitionStatus?.includes("APPROVED") ? "APPROVED" : requisition.requisitionStatus?.includes("REJECTED") ? "REJECTED" : "");
+      }
+    }
+  }, [requisition, signaturePath, decision]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const token = getAccessToken();
+    const email = getEmail();
+    if (!email || !token) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`http://localhost:8080/api/v1/signature/upload/${email}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const path = await res.text();
+        setSignaturePath(path);
+        setSignatureUrl(`http://localhost:8080${path}`);
+      } else {
+        console.error("Failed to upload signature");
+      }
+    } catch (error) {
+      console.error("Error uploading signature:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto mt-8 bg-white border-2 border-black shadow-lg rounded-sm p-10 text-gray-900">
@@ -296,7 +383,7 @@ export default function CompanySecretaryViewForm({ requisition, onSubmit, submit
 
       <div className="mt-8 flex justify-end gap-3">
         <Button size="sm" variant="outline" className="rounded-full text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" className="rounded-full bg-sky-600 hover:bg-sky-700 text-white" disabled={submitting || !decision} onClick={() => onSubmit(decision as "APPROVED" | "REJECTED")}>
+        <Button size="sm" className="rounded-full bg-sky-600 hover:bg-sky-700 text-white" disabled={submitting || !decision} onClick={() => onSubmit(decision as "APPROVED" | "REJECTED", signaturePath || undefined)}>
           {submitting ? "Saving..." : "Submit Decision"}
         </Button>
       </div>

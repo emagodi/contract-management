@@ -32,6 +32,7 @@ export default function CompanySecretaryViewPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<"APPROVED" | "REJECTED" | null>(null);
+  const [pendingSignaturePath, setPendingSignaturePath] = useState<string | undefined>(undefined);
 
   const getAccessToken = () => {
     if (typeof window === "undefined") return "";
@@ -69,8 +70,9 @@ export default function CompanySecretaryViewPage() {
     load();
   }, [idParam, authHeaders]);
 
-  const openConfirm = (decision: "APPROVED" | "REJECTED") => {
+  const openConfirm = (decision: "APPROVED" | "REJECTED", signaturePath?: string) => {
     setPendingDecision(decision);
+    setPendingSignaturePath(signaturePath);
     setConfirmOpen(true);
   };
 
@@ -84,7 +86,7 @@ export default function CompanySecretaryViewPage() {
       const payload = {
         ...item,
         requisitionStatus: status,
-        companySecretary: pendingDecision,
+        companySecretary: pendingSignaturePath || pendingDecision,
         secretaryDate: today,
       } as Record<string, unknown>;
       const res = await fetch(`/api/requisitions/${item.id}/update`, {

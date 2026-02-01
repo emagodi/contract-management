@@ -41,7 +41,7 @@ const TextArea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => {
   );
 };
 
-type Requisition = Record<string, unknown> & {
+type Requisition = {
   id: number;
   requisitionTo?: string;
   requisitionFrom?: string;
@@ -53,6 +53,7 @@ type Requisition = Record<string, unknown> & {
   vendorContactPerson?: string;
   vendorPhoneNumber?: string;
   vendorEmail?: string;
+  contactPersonCapacity?: string;
   justification?: string;
   startDate?: string;
   endDate?: string;
@@ -84,19 +85,26 @@ type Requisition = Record<string, unknown> & {
   specialIssues?: string;
   headOfDept?: string;
   headDate?: string;
-  updatedBy?: string; // Add updatedBy to type
+  procurementManager?: string;
+  procurementDate?: string;
+  updatedBy?: string;
+  financeDirector?: string;
+  fundingAvailable?: string;
+  requisitionStatus?: string;
 };
 
 export default function FinanceDirectorViewForm({ requisition, onSubmit, submitting, error, onCancel }: {
   requisition: Requisition;
-  onSubmit: (funding: "YES" | "NO") => void;
+  onSubmit: (funding: "YES" | "NO", signaturePath?: string) => void;
   submitting?: boolean;
   error?: string | null;
   onCancel: () => void;
 }) {
   const [funding, setFunding] = useState<"YES" | "NO" | "">("");
   const [hodSignatureUrl, setHodSignatureUrl] = useState<string | null>(null);
+  const [pmSignatureUrl, setPmSignatureUrl] = useState<string | null>(null);
   const [fdSignatureUrl, setFdSignatureUrl] = useState<string | null>(null);
+  const [signaturePath, setSignaturePath] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
   const today = new Date().toISOString().split("T")[0];
@@ -146,9 +154,13 @@ export default function FinanceDirectorViewForm({ requisition, onSubmit, submitt
       }
     };
 
-    if (requisition.headOfDept === "APPROVED") {
+    if (requisition.headOfDept?.startsWith("/api/v1/signature")) {
+      setHodSignatureUrl(`http://localhost:8080${requisition.headOfDept}`);
+    } else if (requisition.headOfDept === "APPROVED") {
       fetchHodSignature();
     }
+
+    
   }, [requisition]);
 
   useEffect(() => {
@@ -163,6 +175,7 @@ export default function FinanceDirectorViewForm({ requisition, onSubmit, submitt
         });
         if (res.ok) {
           const relativeUrl = await res.text();
+          setSignaturePath(relativeUrl);
           setFdSignatureUrl(`http://localhost:8080${relativeUrl}`);
         }
       } catch (error) {
@@ -171,6 +184,17 @@ export default function FinanceDirectorViewForm({ requisition, onSubmit, submitt
     };
     fetchFdSignature();
   }, []);
+
+  useEffect(() => {
+    const savedSignature = requisition.financeDirector;
+    if (savedSignature && savedSignature !== "APPROVED" && savedSignature !== "REJECTED" && !signaturePath) {
+      setSignaturePath(savedSignature);
+      setFdSignatureUrl(`http://localhost:8080${savedSignature}`);
+      if (!funding) {
+        setFunding(requisition.fundingAvailable as "YES" | "NO" || "");
+      }
+    }
+  }, [requisition, signaturePath, funding]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -532,13 +556,23 @@ export default function FinanceDirectorViewForm({ requisition, onSubmit, submitt
             </div>
             
             <div className="flex gap-10 text-center">
-              <div className="flex flex-col items-center group">
-                <div className="w-64 border-b-2 border-dotted border-gray-400 mb-1 group-hover:border-blue-600 transition-colors h-8"></div>
-                <div className="font-bold text-gray-500 text-xs uppercase tracking-wider group-hover:text-blue-600 transition-colors">Procurement Manager</div>
+              <div className="flex flex-col items-center group relative">
+                <div className="w-64 border-b-2 border-dotted border-gray-400 mb-1 h-12 flex items-end justify-center relative transition-all duration-300 rounded-lg">
+                   {pmSignatureUrl ? (
+                     <Image src={pmSignatureUrl} alt="PM Signature" width={120} height={60} className="object-contain max-h-12 absolute bottom-0" />
+                   ) : (
+                     <span className="text-xs text-gray-400 italic pb-2">
+                       {(requisition.procurementManager === "YES" || requisition.procurementManager === "NO") ? "Signed" : "Not Signed"}
+                     </span>
+                   )}
+                </div>
+                <div className="font-bold text-gray-500 text-xs uppercase tracking-wider mt-2">Procurement Manager</div>
               </div>
               <div className="flex flex-col items-center group">
-                <div className="w-32 border-b-2 border-dotted border-gray-400 mb-1 group-hover:border-blue-600 transition-colors h-8"></div>
-                <div className="font-bold text-gray-500 text-xs uppercase tracking-wider group-hover:text-blue-600 transition-colors">Date</div>
+                <div className="w-32 border-b-2 border-dotted border-gray-400 mb-1 group-hover:border-blue-600 transition-colors h-12 flex items-end justify-center font-mono text-sm font-bold text-gray-800">
+                  {requisition.procurementDate ? formatDate(String(requisition.procurementDate)) : ""}
+                </div>
+                <div className="font-bold text-gray-500 text-xs uppercase tracking-wider mt-2">Date</div>
               </div>
             </div>
           </div>
@@ -601,7 +635,7 @@ export default function FinanceDirectorViewForm({ requisition, onSubmit, submitt
           size="sm" 
           variant="primary" 
           className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-200 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]" 
-          onClick={() => funding && onSubmit(funding)} 
+          onClick={() => funding && onSubmit(funding, signaturePath || undefined)} 
           disabled={submitting || !funding || !fdSignatureUrl}
         >
           {submitting ? (

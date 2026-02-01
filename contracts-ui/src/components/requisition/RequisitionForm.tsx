@@ -49,6 +49,7 @@ export default function RequisitionForm() {
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [signaturePath, setSignaturePath] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
   // Date and Duration State
@@ -108,6 +109,7 @@ export default function RequisitionForm() {
 
         if (res.ok) {
           const relativeUrl = await res.text();
+          setSignaturePath(relativeUrl);
           setSignatureUrl(`http://localhost:8080${relativeUrl}`);
         }
       } catch (error) {
@@ -142,6 +144,7 @@ export default function RequisitionForm() {
 
       if (res.ok) {
         const relativeUrl = await res.text();
+        setSignaturePath(relativeUrl);
         setSignatureUrl(`http://localhost:8080${relativeUrl}`);
       } else {
         console.error("Failed to upload signature");
@@ -165,13 +168,16 @@ export default function RequisitionForm() {
 
     values.headDate = today;
     values.date = today;
-    if (values.headOfDept === "APPROVED") {
-      values.requisitionStatus = "SUBMITTED";
-    } else if (values.headOfDept === "REJECTED") {
-      values.requisitionStatus = "HOD_REJECTED";
+    
+    // Use signature path if available, otherwise default to APPROVED (legacy)
+    if (signaturePath) {
+      values.headOfDept = signaturePath;
     } else {
-      values.requisitionStatus = "SUBMITTED";
+      values.headOfDept = "APPROVED";
     }
+
+    // Status logic: If signed/approved, it is SUBMITTED
+    values.requisitionStatus = "SUBMITTED";
 
     if (!values.isRenewable) values.isRenewable = "NO";
     if (!values.deliveryNA) values.deliveryNA = "NO";
@@ -594,7 +600,6 @@ export default function RequisitionForm() {
 
             {/* Head of Department (Dropdown & auto-date) */}
           <div className="border-t border-gray-200 p-8 bg-white">
-            <input type="hidden" name="headOfDept" value="APPROVED" />
             <input type="hidden" name="headDate" value={today} />
     
             <div className="flex justify-between items-end px-4">

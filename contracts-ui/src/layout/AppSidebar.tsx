@@ -75,7 +75,7 @@ const navItems: NavItem[] = [
 
   {
     icon: <BoxIcon />,
-    name: "Procurement Manager Queue",
+    name: "Pending Approvals",
     path: "/requisitions/procurement",
     roles: ["ADMIN", "PROCUREMENTMANAGER"],
   },
@@ -147,7 +147,7 @@ const AppSidebar: React.FC = () => {
             : isAllowed(nav.roles)
         )
         .map((nav, index) => (
-        <li key={nav.name}>
+        <li key={nav.path || nav.name}>
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}

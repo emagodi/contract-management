@@ -32,6 +32,7 @@ export default function FinanceDirectorViewPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [pendingFunding, setPendingFunding] = useState<"YES" | "NO" | null>(null);
+  const [pendingSignaturePath, setPendingSignaturePath] = useState<string | undefined>(undefined);
 
   const getAccessToken = () => {
     if (typeof window === "undefined") return "";
@@ -69,8 +70,9 @@ export default function FinanceDirectorViewPage() {
     load();
   }, [idParam, authHeaders]);
 
-  const openConfirm = (funding: "YES" | "NO") => {
+  const openConfirm = (funding: "YES" | "NO", signaturePath?: string) => {
     setPendingFunding(funding);
+    setPendingSignaturePath(signaturePath);
     setConfirmOpen(true);
   };
 
@@ -85,7 +87,7 @@ export default function FinanceDirectorViewPage() {
         ...item,
         fundingAvailable: pendingFunding,
         requisitionStatus: status,
-        financeDirector: pendingFunding === "YES" ? "APPROVED" : "REJECTED",
+        financeDirector: pendingSignaturePath || (pendingFunding === "YES" ? "APPROVED" : "REJECTED"),
         financeDate: today,
       } as Record<string, unknown>;
       const res = await fetch(`/api/requisitions/${item.id}/update`, {
