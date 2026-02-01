@@ -17,7 +17,6 @@ import {
   TableIcon,
   UserCircleIcon,
 } from "../icons/index";
-import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
   name: string;
@@ -45,21 +44,9 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false, roles: ALL_ROLES }],
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
+    path: "/",
     roles: ALL_ROLES,
   },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-    roles: ALL_ROLES,
-  },
-
   {
     icon: <ListIcon />,
     name: "Requisition",
@@ -100,57 +87,9 @@ const navItems: NavItem[] = [
     path: "/requisitions/approvals",
     roles: ["ADMIN", "COMPANYSECRETARY"],
   },
-
-  {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false, roles: ALL_ROLES }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false, roles: ALL_ROLES }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false, roles: ALL_ROLES },
-      { name: "404 Error", path: "/error-404", pro: false, roles: ALL_ROLES },
-    ],
-  },
 ];
 
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false, roles: ALL_ROLES },
-      { name: "Bar Chart", path: "/bar-chart", pro: false, roles: ALL_ROLES },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false, roles: ALL_ROLES },
-      { name: "Avatar", path: "/avatars", pro: false, roles: ALL_ROLES },
-      { name: "Badge", path: "/badge", pro: false, roles: ALL_ROLES },
-      { name: "Buttons", path: "/buttons", pro: false, roles: ALL_ROLES },
-      { name: "Images", path: "/images", pro: false, roles: ALL_ROLES },
-      { name: "Videos", path: "/videos", pro: false, roles: ALL_ROLES },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false, roles: ALL_ROLES },
-      { name: "Sign Up", path: "/signup", pro: false, roles: ALL_ROLES },
-    ],
-  },
-];
+const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -455,26 +394,8 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>
-
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
-            </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
       </div>
     </aside>
   );

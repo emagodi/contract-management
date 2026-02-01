@@ -295,7 +295,7 @@ export default function SubmittedRequisitionsPage() {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Submitted Requisitions" />
+      <PageBreadcrumb pageTitle="Submitted Requisitions" showTitle={false} />
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 shadow-theme-xs dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.05] gap-4">
@@ -359,38 +359,38 @@ export default function SubmittedRequisitionsPage() {
           <div className="min-w-[900px]">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-gray-100 dark:border-white/[0.05]">
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400">
+                <TableRow className="border-b border-emerald-100 bg-emerald-50 dark:border-white/[0.05] dark:bg-white/[0.03]">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <InfoIcon className="w-3.5 h-3.5" /> ID
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <UserIcon className="w-3.5 h-3.5" /> To
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <CalenderIcon className="w-3.5 h-3.5" /> Start
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <CalenderIcon className="w-3.5 h-3.5" /> End
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <DollarLineIcon className="w-3.5 h-3.5" /> Price
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-center text-xs dark:text-gray-400">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-center text-xs dark:text-gray-400">
                     <div className="flex items-center justify-center gap-1">
                       <DocsIcon className="w-3.5 h-3.5" /> Attachments
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-xs dark:text-gray-400">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <BoltIcon className="w-3.5 h-3.5" /> Actions
                     </div>
