@@ -50,6 +50,34 @@ export default function RequisitionForm() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Date and Duration State
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [duration, setDuration] = useState({ days: "", weeks: "", months: "", years: "" });
+  
+  // Contract Value State
+  const [contractPrice, setContractPrice] = useState("");
+  const [vat, setVat] = useState("");
+  const totalContractPrice = ((parseFloat(contractPrice) || 0) + (parseFloat(vat) || 0)).toFixed(2);
+  
+  // Calculate duration whenever dates change
+  useEffect(() => {
+    if (startDate && endDate && endDate >= startDate) {
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      setDuration({
+        days: `${diffDays} Days`,
+        weeks: `${(diffDays / 7).toFixed(1).replace(/\.0$/, '')} Weeks`,
+        months: `${(diffDays / 30.44).toFixed(1).replace(/\.0$/, '')} Months`,
+        years: `${(diffDays / 365.25).toFixed(1).replace(/\.0$/, '')} Years`
+      });
+    } else {
+      setDuration({ days: "", weeks: "", months: "", years: "" });
+    }
+  }, [startDate, endDate]);
+
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const today = new Date().toISOString().split("T")[0];
@@ -308,18 +336,58 @@ export default function RequisitionForm() {
             </div>
             <div className="p-6 grid grid-cols-[250px_1fr] gap-y-4 text-sm">
               <div className="text-gray-600 font-medium flex items-center">Contract Start Date</div>
-              <div><DatePicker name="startDate" className="w-full border-gray-200" /></div>
+              <div>
+                <DatePicker 
+                  name="startDate" 
+                  className="w-full border-gray-200" 
+                  onChange={(dates) => setStartDate(dates[0] || null)}
+                />
+              </div>
               
               <div className="text-gray-600 font-medium flex items-center">Duration</div>
               <div className="grid grid-cols-4 gap-2">
-                <Input name="durationDays" placeholder="Days" className="w-full border-gray-200" />
-                <Input name="durationWeeks" placeholder="Weeks" className="w-full border-gray-200" />
-                <Input name="durationMonths" placeholder="Months" className="w-full border-gray-200" />
-                <Input name="durationYears" placeholder="Years" className="w-full border-gray-200" />
+                <Input 
+                  name="durationDays" 
+                  placeholder="Days" 
+                  className="w-full border-gray-200 bg-gray-100 cursor-not-allowed text-gray-700" 
+                  value={duration.days} 
+                  readOnly
+                  tabIndex={-1}
+                />
+                <Input 
+                  name="durationWeeks" 
+                  placeholder="Weeks" 
+                  className="w-full border-gray-200 bg-gray-100 cursor-not-allowed text-gray-700" 
+                  value={duration.weeks} 
+                  readOnly
+                  tabIndex={-1}
+                />
+                <Input 
+                  name="durationMonths" 
+                  placeholder="Months" 
+                  className="w-full border-gray-200 bg-gray-100 cursor-not-allowed text-gray-700" 
+                  value={duration.months} 
+                  readOnly
+                  tabIndex={-1}
+                />
+                <Input 
+                  name="durationYears" 
+                  placeholder="Years" 
+                  className="w-full border-gray-200 bg-gray-100 cursor-not-allowed text-gray-700" 
+                  value={duration.years} 
+                  readOnly
+                  tabIndex={-1}
+                />
               </div>
               
               <div className="text-gray-600 font-medium flex items-center">Contract End Date</div>
-              <div><DatePicker name="endDate" className="w-full border-gray-200" /></div>
+              <div>
+                <DatePicker 
+                  name="endDate" 
+                  className="w-full border-gray-200" 
+                  onChange={(dates) => setEndDate(dates[0] || null)}
+                />
+              </div>
               
               <div className="text-gray-600 font-medium flex items-center">Subject to Renewal?</div>
               <div className="flex flex-wrap items-center gap-4">
@@ -345,13 +413,44 @@ export default function RequisitionForm() {
             </div>
             <div className="p-6 grid grid-cols-[250px_1fr] gap-y-4 text-sm">
               <div className="text-gray-600 font-medium flex items-center">Contract Price</div>
-              <div><Input name="contractPrice" placeholder="US$0.00" className="w-full border-gray-200 font-mono" /></div>
+              <div>
+                <Input 
+                  name="contractPrice" 
+                  placeholder="0.00" 
+                  className="w-full border-gray-200 font-mono" 
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={contractPrice}
+                  onChange={(e) => setContractPrice(e.target.value)}
+                />
+              </div>
               
               <div className="text-gray-600 font-medium flex items-center">VAT (or other taxes)</div>
-              <div><Input name="vat" placeholder="US$0.00" className="w-full border-gray-200 font-mono" /></div>
+              <div>
+                <Input 
+                  name="vat" 
+                  placeholder="0.00" 
+                  className="w-full border-gray-200 font-mono" 
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={vat}
+                  onChange={(e) => setVat(e.target.value)}
+                />
+              </div>
               
               <div className="text-gray-900 font-bold flex items-center">Total Contract Price</div>
-              <div><Input name="totalContractPrice" placeholder="US$0.00" className="w-full border-blue-200 bg-blue-50 font-bold font-mono text-blue-900" /></div>
+              <div>
+                <Input 
+                  name="totalContractPrice" 
+                  placeholder="0.00" 
+                  className="w-full border-blue-200 bg-blue-50 font-bold font-mono text-blue-900 cursor-not-allowed" 
+                  value={totalContractPrice === "0.00" && !contractPrice && !vat ? "" : totalContractPrice}
+                  readOnly
+                  tabIndex={-1}
+                />
+              </div>
             </div>
           </div>
 
