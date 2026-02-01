@@ -33,9 +33,20 @@ export default function SignatureUploadCard() {
       });
       if (res.ok) {
         const url = await res.text();
-        // The backend returns a relative path like /api/v1/signature/file/1
-        // We need to prepend the backend host
-        setSignatureUrl(`http://localhost:8080${url}`);
+        // Fetch the image as a blob to handle authentication
+        const imageRes = await fetch(`http://localhost:8080${url}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (imageRes.ok) {
+          const blob = await imageRes.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          setSignatureUrl(objectUrl);
+        } else {
+          setSignatureUrl(null);
+        }
       } else {
         setSignatureUrl(null);
       }
@@ -44,6 +55,14 @@ export default function SignatureUploadCard() {
       setSignatureUrl(null);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (signatureUrl && signatureUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(signatureUrl);
+      }
+    };
+  }, [signatureUrl]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !email) return;

@@ -115,7 +115,6 @@ public class SignatureController {
 
     // ------------------------ FILE SERVE ------------------------
     @GetMapping("/file/{id}")
-    @PreAuthorize("hasAuthority('READ_PRIVILEGE') and hasAnyRole('ADMIN', 'PALEGAL', 'COMPANYSECRETARY', 'MANAGINGDIRECTOR', 'PROCUREMENTMANAGER', 'FINANCEDIRECTOR', 'TECHNICALDIRECTOR', 'COMMERCIALDIRECTOR', 'BUSINESSMANAGER', 'HOD', 'USER')")
     @Operation(summary = "Serve signature file")
     public ResponseEntity<byte[]> getSignatureFile(@PathVariable Long id) throws IOException {
         Signature sig = signatureService.getSignatureById(id);
