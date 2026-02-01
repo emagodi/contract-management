@@ -6,8 +6,27 @@ import Button from "@/components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Pagination from "@/components/tables/Pagination";
 import { Modal } from "@/components/ui/modal";
-import { EyeIcon, DocsIcon, ArrowUpIcon } from "@/icons";
+import { 
+  EyeIcon, DocsIcon, ArrowUpIcon,
+  UserIcon, CalenderIcon, DollarLineIcon, InfoIcon, BoltIcon
+} from "@/icons";
 import { useRouter } from "next/navigation";
+
+const SearchIcon = () => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className="w-5 h-5"
+  >
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+);
 
 type Requisition = {
   id: number;
@@ -40,6 +59,7 @@ export default function FinanceDirectorQueuePage() {
   const [pageSize, setPageSize] = useState(10);
   const [sortKey, setSortKey] = useState<"createdAt" | "id">("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const router = useRouter();
 
@@ -50,6 +70,14 @@ export default function FinanceDirectorQueuePage() {
   const [attachmentsForReqId, setAttachmentsForReqId] = useState<number | null>(null);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const [attachmentsError, setAttachmentsError] = useState<string | null>(null);
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    // Format: 1 February 2026
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
 
   const getAccessToken = () => {
     if (typeof window === "undefined") return "";
@@ -93,7 +121,18 @@ export default function FinanceDirectorQueuePage() {
       const t = v ? Date.parse(v) : NaN;
       return isNaN(t) ? 0 : t;
     };
-    const arr = [...items];
+    // Filter first
+    let arr = [...items];
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      arr = arr.filter(i => 
+        String(i.requisitionTo || "").toLowerCase().includes(lower) ||
+        String(i.requisitionFrom || "").toLowerCase().includes(lower) ||
+        String(i.contractPrice || "").toLowerCase().includes(lower) ||
+        String(i.id).includes(lower)
+      );
+    }
+
     arr.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "createdAt") cmp = toTime(a.createdAt) - toTime(b.createdAt);
@@ -101,7 +140,7 @@ export default function FinanceDirectorQueuePage() {
       return sortDir === "desc" ? -cmp : cmp;
     });
     return arr;
-  }, [items, sortKey, sortDir]);
+  }, [items, sortKey, sortDir, searchTerm]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(sortedItems.length / pageSize)), [sortedItems.length, pageSize]);
   const pagedItems = useMemo(() => {
@@ -164,75 +203,163 @@ export default function FinanceDirectorQueuePage() {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Finance Director Queue" />
+      <PageBreadcrumb pageTitle="Finance Director Queue" showTitle={false} />
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 shadow-theme-xs dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.05]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.05] gap-4">
           <div>
-            <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90">SUBMITTED Requisitions</p>
-            <p className="text-gray-500 text-theme-xs dark:text-gray-400">For Finance Director review</p>
+            <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90">FINANCE QUEUE</p>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <label className="text-gray-600">Per page</label>
-            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700">
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-            <label className="text-gray-600 ml-2">Sort</label>
-            <select value={`${sortKey}_${sortDir}`} onChange={(e) => { const [key, dir] = e.target.value.split("_") as ["createdAt" | "id", "asc" | "desc"]; setSortKey(key); setSortDir(dir); setCurrentPage(1); }} className="border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700">
-              <option value="createdAt_desc">Created (Newest)</option>
-              <option value="createdAt_asc">Created (Oldest)</option>
-              <option value="id_desc">ID (High→Low)</option>
-              <option value="id_asc">ID (Low→High)</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 w-full sm:w-64 transition-shadow"
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-gray-200 rounded-md px-2 py-1 text-gray-700 text-xs font-medium focus:outline-none hover:border-gray-300 transition-colors cursor-pointer"
+                title="Rows per page"
+              >
+                <option value={10}>10 rows</option>
+                <option value={20}>20 rows</option>
+                <option value={50}>50 rows</option>
+              </select>
+              
+              <div className="w-px h-4 bg-gray-300 mx-1"></div>
+
+              <select
+                value={`${sortKey}_${sortDir}`}
+                onChange={(e) => {
+                  const [key, dir] = e.target.value.split("_") as ["createdAt" | "id", "asc" | "desc"];
+                  setSortKey(key);
+                  setSortDir(dir);
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-gray-200 rounded-md px-2 py-1 text-gray-700 text-xs font-medium focus:outline-none hover:border-gray-300 transition-colors cursor-pointer"
+                title="Sort order"
+              >
+                <option value="createdAt_desc">Newest First</option>
+                <option value="createdAt_asc">Oldest First</option>
+                <option value="id_desc">ID High-Low</option>
+                <option value="id_asc">ID Low-High</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <div className="max-w-full overflow-x-auto">
           <div className="min-w-[900px]">
             <Table>
-              <TableHeader className="border-y border-gray-100 dark:border-white/[0.05] bg-gray-50/80">
-                <TableRow>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">ID</TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">From</TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">To</TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Start</TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">End</TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Price</TableCell>
-                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
+              <TableHeader>
+                <TableRow className="border-b border-emerald-100 bg-emerald-50 dark:border-white/[0.05] dark:bg-white/[0.03]">
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <InfoIcon className="w-3.5 h-3.5" /> ID
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <UserIcon className="w-3.5 h-3.5" /> From
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <UserIcon className="w-3.5 h-3.5" /> To
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <CalenderIcon className="w-3.5 h-3.5" /> Start
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <CalenderIcon className="w-3.5 h-3.5" /> End
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <DollarLineIcon className="w-3.5 h-3.5" /> Price
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-center text-xs dark:text-gray-400">
+                    <div className="flex items-center justify-center gap-1">
+                      <DocsIcon className="w-3.5 h-3.5" /> Attachments
+                    </div>
+                  </TableCell>
+                  <TableCell isHeader className="px-5 py-3 font-medium text-emerald-800 text-start text-xs dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <BoltIcon className="w-3.5 h-3.5" /> Actions
+                    </div>
+                  </TableCell>
                 </TableRow>
               </TableHeader>
 
-              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+              <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell className="px-5 py-4" colSpan={7}>Loading...</TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell className="px-5 py-4 text-red-600" colSpan={7}>{error}</TableCell>
+                    <TableCell colSpan={8} className="px-5 py-8 text-center text-gray-500">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ) : pagedItems.length === 0 ? (
                   <TableRow>
-                    <TableCell className="px-5 py-4" colSpan={7}>No submitted requisitions</TableCell>
+                    <TableCell colSpan={8} className="px-5 py-8 text-center text-gray-500">No requisitions found.</TableCell>
                   </TableRow>
                 ) : (
                   pagedItems.map((r) => (
-                    <TableRow key={r.id} className="hover:bg-blue-50/50 transition-colors">
-                      <TableCell className="px-5 py-4 text-start">{r.id}</TableCell>
-                      <TableCell className="px-5 py-4 text-start">{String(r.requisitionFrom || "-")}</TableCell>
-                      <TableCell className="px-5 py-4 text-start">{String(r.requisitionTo || "-")}</TableCell>
-                      <TableCell className="px-5 py-4 text-start">{String(r.startDate || "-")}</TableCell>
-                      <TableCell className="px-5 py-4 text-start">{String(r.endDate || "-")}</TableCell>
-                      <TableCell className="px-5 py-4 text-start">{String(r.contractPrice || "-")}</TableCell>
-                      <TableCell className="px-5 py-4 text-start">
-                        <div className="flex items-center gap-2">
-                          <Button size="xs" variant="outline" startIcon={<EyeIcon />} className="rounded-full text-sky-700 ring-1 ring-inset ring-sky-200 hover:bg-sky-50" onClick={() => router.push(`/requisitions/finance/${r.id}`)}><span className="sr-only">View</span></Button>
+                    <TableRow key={r.id} className="hover:bg-blue-50/50 transition-colors group border-b border-gray-50 last:border-none">
+                      <TableCell className="px-5 py-3 text-start font-mono text-gray-600 text-xs">{r.id}</TableCell>
+                      <TableCell className="px-5 py-3 text-start font-medium text-gray-800 text-xs">{String(r.requisitionFrom || "-")}</TableCell>
+                      <TableCell className="px-5 py-3 text-start font-medium text-gray-800 text-xs">{String(r.requisitionTo || "-")}</TableCell>
+                      <TableCell className="px-5 py-3 text-start text-gray-600 text-xs">{formatDate(r.startDate)}</TableCell>
+                      <TableCell className="px-5 py-3 text-start text-gray-600 text-xs">{formatDate(r.endDate)}</TableCell>
+                      <TableCell className="px-5 py-3 text-start font-mono text-gray-700 text-xs">{String(r.contractPrice || "-")}</TableCell>
+                      <TableCell className="px-5 py-3 text-center">
+                        <button 
+                          onClick={() => openAttachments(r.id)} 
+                          className="p-1 rounded-md text-green-600 hover:bg-green-50 hover:text-green-700 transition-colors focus:outline-none focus:ring-1 focus:ring-green-200 inline-flex items-center justify-center"
+                          title="View Attachments"
+                        >
+                          <DocsIcon className="w-4 h-4" />
+                        </button>
+                      </TableCell>
+                      <TableCell className="px-5 py-3 text-start">
+                        <div className="flex items-center gap-2 opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => router.push(`/requisitions/finance/${r.id}`)} 
+                            className="p-1 rounded-md text-sky-600 hover:bg-sky-50 hover:text-sky-700 transition-colors focus:outline-none focus:ring-1 focus:ring-sky-200"
+                            title="View Details"
+                          >
+                            <EyeIcon className="w-4 h-4" />
+                          </button>
                           
-                          <Button size="xs" variant="outline" startIcon={<ArrowUpIcon />} className="rounded-full text-orange-600 ring-1 ring-inset ring-orange-200 hover:bg-orange-50" onClick={() => triggerUpload(r.id)}><span className="sr-only">Upload</span></Button>
+                          <button 
+                            onClick={() => triggerUpload(r.id)} 
+                            className="p-1 rounded-md text-orange-600 hover:bg-orange-50 hover:text-orange-700 transition-colors focus:outline-none focus:ring-1 focus:ring-orange-200"
+                            title="Upload Signature"
+                          >
+                            <ArrowUpIcon className="w-4 h-4" />
+                          </button>
                           <input id={`fd-file-upload-${r.id}`} type="file" multiple className="hidden" onChange={(e) => uploadFiles(r.id, e.target.files)} />
-                          <Button size="xs" variant="outline" startIcon={<DocsIcon />} className="rounded-full text-green-600 ring-1 ring-inset ring-green-200 hover:bg-green-50" onClick={() => openAttachments(r.id)}><span className="sr-only">Attachments</span></Button>
                         </div>
                       </TableCell>
                     </TableRow>
