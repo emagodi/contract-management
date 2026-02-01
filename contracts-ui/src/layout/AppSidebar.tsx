@@ -68,7 +68,7 @@ const navItems: NavItem[] = [
 
   {
     icon: <DollarLineIcon />,
-    name: "Finance Director Queue",
+    name: "Pending Approvals",
     path: "/requisitions/finance",
     roles: ["ADMIN", "FINANCEDIRECTOR"],
   },

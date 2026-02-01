@@ -203,7 +203,7 @@ export default function FinanceDirectorQueuePage() {
 
   return (
     <div>
-      <PageBreadcrumb pageTitle="Finance Director Queue" showTitle={false} />
+      <PageBreadcrumb pageTitle="Pending Approvals" showTitle={false} />
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 shadow-theme-xs dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.05] gap-4">

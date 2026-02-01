@@ -310,7 +310,7 @@ export default function RequisitionForm() {
               </div>
               
               <div className="text-gray-600 font-medium flex items-center">Contact Number</div>
-              <div><Input name="contactNumber" className="w-full border-gray-200" /></div>
+              <div><Input name="vendorPhoneNumber" className="w-full border-gray-200" /></div>
               
               <div className="text-gray-600 font-medium flex items-center">Email Address</div>
               <div><Input name="vendorEmail" className="w-full border-gray-200" /></div>
