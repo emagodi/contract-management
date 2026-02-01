@@ -4,6 +4,7 @@ import React, { useTransition, useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/button/Button";
+import DatePicker from "@/components/form/date-picker";
 
 // Local components with rounded edges and modern styling
 const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => {
@@ -307,7 +308,7 @@ export default function RequisitionForm() {
             </div>
             <div className="p-6 grid grid-cols-[250px_1fr] gap-y-4 text-sm">
               <div className="text-gray-600 font-medium flex items-center">Contract Start Date</div>
-              <div><Input type="date" name="startDate" onKeyDown={(e) => e.preventDefault()} className="w-full border-gray-200" /></div>
+              <div><DatePicker name="startDate" className="w-full border-gray-200" /></div>
               
               <div className="text-gray-600 font-medium flex items-center">Duration</div>
               <div className="grid grid-cols-4 gap-2">
@@ -318,7 +319,7 @@ export default function RequisitionForm() {
               </div>
               
               <div className="text-gray-600 font-medium flex items-center">Contract End Date</div>
-              <div><Input type="date" name="endDate" onKeyDown={(e) => e.preventDefault()} className="w-full border-gray-200" /></div>
+              <div><DatePicker name="endDate" className="w-full border-gray-200" /></div>
               
               <div className="text-gray-600 font-medium flex items-center">Subject to Renewal?</div>
               <div className="flex flex-wrap items-center gap-4">
