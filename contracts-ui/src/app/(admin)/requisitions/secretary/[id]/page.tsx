@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import CompanySecretaryViewForm from "@/components/requisition/CompanySecretaryViewForm";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import { CheckLineIcon, CloseLineIcon, BoxIconLine, CalenderIcon } from "@/icons";
 
@@ -22,6 +22,8 @@ type Requisition = {
 export default function CompanySecretaryViewPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewOnly = searchParams.get("viewOnly") === "true";
   const idParam = params?.id as string | undefined;
   const [item, setItem] = useState<Requisition | null>(null);
   const [loading, setLoading] = useState(false);
@@ -117,7 +119,14 @@ export default function CompanySecretaryViewPage() {
       ) : !item ? (
         <div className="p-5">No requisition found</div>
       ) : (
-        <CompanySecretaryViewForm requisition={item} submitting={submitting} error={submitError} onSubmit={openConfirm} onCancel={() => router.push("/requisitions/secretary")} />
+        <CompanySecretaryViewForm 
+          requisition={item} 
+          submitting={submitting} 
+          error={submitError} 
+          onSubmit={openConfirm} 
+          onCancel={() => router.push("/requisitions/secretary")}
+          viewOnly={viewOnly}
+        />
       )}
 
       <Modal isOpen={confirmOpen} onClose={() => setConfirmOpen(false)} className="max-w-[500px] p-0 overflow-hidden rounded-2xl">

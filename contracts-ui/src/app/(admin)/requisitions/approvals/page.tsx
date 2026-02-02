@@ -310,7 +310,7 @@ export default function ApprovalQueuePage() {
                       <TableCell className="px-5 py-3 text-start text-gray-600 text-xs">{String(r.requisitionTo || "-")}</TableCell>
                       <TableCell className="px-5 py-3 text-center">
                           <button 
-                            onClick={() => router.push(`/requisitions/secretary/${r.id}`)} 
+                            onClick={() => router.push(`/requisitions/secretary/${r.id}?viewOnly=true`)} 
                             className="p-1 rounded-md text-sky-600 hover:bg-sky-50 hover:text-sky-700 transition-colors focus:outline-none focus:ring-1 focus:ring-sky-200"
                             title="View Requisition"
                           >

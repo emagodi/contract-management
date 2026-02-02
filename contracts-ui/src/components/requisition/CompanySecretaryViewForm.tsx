@@ -97,12 +97,13 @@ type Requisition = Record<string, unknown> & {
   updatedBy?: string;
 };
 
-export default function CompanySecretaryViewForm({ requisition, onSubmit, submitting, error, onCancel }: {
+export default function CompanySecretaryViewForm({ requisition, onSubmit, submitting, error, onCancel, viewOnly = false }: {
   requisition: Requisition;
   onSubmit: (decision: "APPROVED" | "REJECTED", signaturePath?: string) => void;
   submitting?: boolean;
   error?: string | null;
   onCancel: () => void;
+  viewOnly?: boolean;
 }) {
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED" | "">("");
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
@@ -586,12 +587,12 @@ export default function CompanySecretaryViewForm({ requisition, onSubmit, submit
                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                Received by Legal Department:
                <div className="flex gap-4 ml-4">
-                 <label className={`cursor-pointer px-2 py-1 rounded border text-xs transition-all ${decision === 'APPROVED' ? 'bg-blue-50 border-blue-500 font-bold text-blue-700' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
-                   <input type="radio" className="hidden" name="secretaryDecision" value="APPROVED" checked={decision === 'APPROVED'} onChange={() => setDecision('APPROVED')} />
+                 <label className={`cursor-pointer px-2 py-1 rounded border text-xs transition-all ${decision === 'APPROVED' ? 'bg-blue-50 border-blue-500 font-bold text-blue-700' : 'bg-white border-gray-200 hover:border-blue-300'} ${viewOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}>
+                   <input type="radio" className="hidden" name="secretaryDecision" value="APPROVED" checked={decision === 'APPROVED'} onChange={() => !viewOnly && setDecision('APPROVED')} disabled={viewOnly} />
                    Approve [ {decision === 'APPROVED' ? '✓' : '\u00A0'} ]
                  </label>
-                 <label className={`cursor-pointer px-2 py-1 rounded border text-xs transition-all ${decision === 'REJECTED' ? 'bg-red-50 border-red-500 font-bold text-red-700' : 'bg-white border-gray-200 hover:border-red-300'}`}>
-                   <input type="radio" className="hidden" name="secretaryDecision" value="REJECTED" checked={decision === 'REJECTED'} onChange={() => setDecision('REJECTED')} />
+                 <label className={`cursor-pointer px-2 py-1 rounded border text-xs transition-all ${decision === 'REJECTED' ? 'bg-red-50 border-red-500 font-bold text-red-700' : 'bg-white border-gray-200 hover:border-red-300'} ${viewOnly ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}>
+                   <input type="radio" className="hidden" name="secretaryDecision" value="REJECTED" checked={decision === 'REJECTED'} onChange={() => !viewOnly && setDecision('REJECTED')} disabled={viewOnly} />
                    Reject [ {decision === 'REJECTED' ? 'X' : '\u00A0'} ]
                  </label>
                </div>
@@ -599,22 +600,26 @@ export default function CompanySecretaryViewForm({ requisition, onSubmit, submit
             
             <div className="flex justify-between items-end gap-10 text-center">
               <div className="flex flex-col items-center group relative">
-                <div className={`w-64 border-b-2 border-dotted mb-1 h-12 flex items-end justify-center relative transition-all duration-300 rounded-lg ${!signatureUrl ? 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer' : 'border-gray-400'}`}>
+                <div className={`w-64 border-b-2 border-dotted mb-1 h-12 flex items-end justify-center relative transition-all duration-300 rounded-lg ${!signatureUrl && !viewOnly ? 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer' : 'border-gray-400'}`}>
                    {signatureUrl ? (
                      <div className="relative w-full h-full flex items-end justify-center">
                        <Image src={signatureUrl} alt="Company Secretary Signature" width={120} height={60} className="object-contain max-h-12 absolute bottom-0" />
-                       <button 
-                        onClick={(e) => { 
-                          e.preventDefault();
-                          setSignatureUrl(null); 
-                          setSignaturePath(null); 
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 z-10"
-                        title="Remove Signature"
-                      >
-                        <CloseLineIcon className="w-3 h-3" />
-                      </button>
+                       {!viewOnly && (
+                         <button 
+                          onClick={(e) => { 
+                            e.preventDefault();
+                            setSignatureUrl(null); 
+                            setSignaturePath(null); 
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110 z-10"
+                          title="Remove Signature"
+                        >
+                          <CloseLineIcon className="w-3 h-3" />
+                        </button>
+                       )}
                      </div>
+                   ) : viewOnly ? (
+                     <span className="text-xs text-gray-400 italic pb-2">Not Signed</span>
                    ) : (
                     <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full pb-1">
                       <input 
@@ -657,41 +662,43 @@ export default function CompanySecretaryViewForm({ requisition, onSubmit, submit
       </div>
 
       {/* ACTION BUTTONS */}
-      <div className="mt-8 flex gap-6 pt-6 border-t border-gray-100">
-        <Button 
-          size="sm" 
-          variant="primary" 
-          className={`flex-1 rounded-lg py-2 text-sm font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] ${(!decision || !signaturePath) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-200'}`}
-          onClick={() => onSubmit(decision as "APPROVED" | "REJECTED", signaturePath || undefined)}
-          disabled={!decision || !signaturePath || submitting}
-        >
-          {submitting ? (
-            <>
-              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Submitting...</span>
-            </>
-          ) : (
-            <>
-              <CheckLineIcon className="w-4 h-4" />
-              <span>Submit Decision</span>
-            </>
-          )}
-        </Button>
+      {!viewOnly && (
+        <div className="mt-8 flex gap-6 pt-6 border-t border-gray-100">
+          <Button 
+            size="sm" 
+            variant="primary" 
+            className={`flex-1 rounded-lg py-2 text-sm font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] ${(!decision || !signaturePath) ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-200'}`}
+            onClick={() => onSubmit(decision as "APPROVED" | "REJECTED", signaturePath || undefined)}
+            disabled={!decision || !signaturePath || submitting}
+          >
+            {submitting ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Submitting...</span>
+              </>
+            ) : (
+              <>
+                <CheckLineIcon className="w-4 h-4" />
+                <span>Submit Decision</span>
+              </>
+            )}
+          </Button>
 
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="flex-1 rounded-lg text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]" 
-          onClick={onCancel}
-          disabled={submitting}
-        >
-          <CloseLineIcon className="w-4 h-4" />
-          <span>Cancel</span>
-        </Button>
-      </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1 rounded-lg text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]" 
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            <CloseLineIcon className="w-4 h-4" />
+            <span>Cancel</span>
+          </Button>
+        </div>
+      )}
       
       {error && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
